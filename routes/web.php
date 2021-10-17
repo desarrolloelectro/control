@@ -12,12 +12,13 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-
+Route::view('/', 'welcome');
+/*
 Route::get('/', function () {
     //return view('welcome');
     return redirect()->route('login');
 });
-
+*/
 
 
 
@@ -66,7 +67,7 @@ Route::post('/gastos/cargar_tipo_gastos','GastoController@cargar_tipo_gastos')->
 Route::post('/gastos/eliminar_gasto','GastoController@eliminar_gasto')->name('gastos.eliminar_gasto');
 
 
-
+/*
 Route::get('/cajas','CajaController@index')->name('cajas.index');
 Route::get('/cajas/show/{id}','CajaController@show')->where('id','[0-9]+')->name('cajas.show');
 Route::get('/cajas/nuevo','CajaController@create')->name('cajas.create');
@@ -74,7 +75,7 @@ Route::post('/cajas/guardar','CajaController@store')->name('cajas.store');
 Route::get('/cajas/{id}/editar','CajaController@edit')->name('cajas.edit');
 Route::put('/cajas/actualizar/{id}','CajaController@update')->name('cajas.update');
 Route::delete('/cajas/eliminar/{id}','CajaController@destroy')->name('cajas.destroy');
-
+*/
 Route::get('/areas','AreaController@index')->name('areas.index');
 Route::get('/areas/show/{id}','AreaController@show')->where('id','[0-9]+')->name('areas.show');
 Route::get('/areas/nuevo','AreaController@create')->name('areas.create');
@@ -240,7 +241,7 @@ Route::post('/tipo_gastos/guardar','Tipo_gastoController@store')->name('tipo_gas
 Route::get('/tipo_gastos/{id}/editar','Tipo_gastoController@edit')->name('tipo_gastos.edit');
 Route::put('/tipo_gastos/actualizar/{id}','Tipo_gastoController@update')->name('tipo_gastos.update');
 Route::delete('/tipo_gastos/eliminar/{id}','Tipo_gastoController@destroy')->name('tipo_gastos.destroy');
-
+/*
 Route::get('/tipo_gasto_agencias','Tipo_gasto_agenciaController@index')->name('tipo_gasto_agencias.index');
 Route::get('/tipo_gasto_agencias/show/{id}','Tipo_gasto_agenciaController@show')->where('id','[0-9]+')->name('tipo_gasto_agencias.show');
 Route::get('/tipo_gasto_agencias/nuevo','Tipo_gasto_agenciaController@create')->name('tipo_gasto_agencias.create');
@@ -248,7 +249,7 @@ Route::post('/tipo_gasto_agencias/guardar','Tipo_gasto_agenciaController@store')
 Route::get('/tipo_gasto_agencias/{id}/editar','Tipo_gasto_agenciaController@edit')->name('tipo_gasto_agencias.edit');
 Route::put('/tipo_gasto_agencias/actualizar/{id}','Tipo_gasto_agenciaController@update')->name('tipo_gasto_agencias.update');
 Route::delete('/tipo_gasto_agencias/eliminar/{id}','Tipo_gasto_agenciaController@destroy')->name('tipo_gasto_agencias.destroy');
-
+*/
 Route::get('/usuario_agencias','Usuario_agenciaController@index')->name('usuario_agencias.index');
 Route::get('/usuario_agencias/show/{id}','Usuario_agenciaController@show')->where('id','[0-9]+')->name('usuario_agencias.show');
 Route::get('/usuario_agencias/nuevo','Usuario_agenciaController@create')->name('usuario_agencias.create');
@@ -265,16 +266,66 @@ Route::get('/roles/{id}/editar','RolController@edit')->name('roles.edit');
 Route::put('/roles/actualizar/{id}','RolController@update')->name('roles.update');
 Route::delete('/roles/eliminar/{id}','RolController@destroy')->name('roles.destroy');
 
+
 Route::get('/reportes','ReportesController@index')->name('reportes.index');
 
 Route::get('/reportes/cotizaciones','ReportesController@cotizaciones')->name('reportes.cotizaciones');
 Route::post('/reportes/cotizaciones_export','ReportesController@cotizaciones_export')->name('reportes.cotizaciones_export');
 Route::get('/reportes/usuarios','ReportesController@usuarios')->name('reportes.usuarios');
 Route::post('/reportes/usuarios_export','ReportesController@usuarios_export')->name('reportes.usuarios_export');
+Route::post('/reportes/dsi_export','ReportesController@dsi_export')->name('reportes.dsi_export');
 Route::get('/reportes/informe_ventas_export','ReportesController@informe_ventas_export')->name('reportes.informe_ventas_export');
 Route::get('/reportes/dia_ivas_export','ReportesController@dia_ivas_export')->name('reportes.dia_ivas_export');
+Route::get('/reportes/dsi_data_export','ReportesController@dsi_data_export')->name('reportes.dsi_data_export');
 
 Route::get('/principal','PrincipalController@index')->name('principal.index');
+
+/*
+Route::resource('dsi/data', 'DsiDataController');
+Route::resource('dsi/meta/values', 'DsiMetaValuesController');
+Route::resource('dsi/meta', 'DsiMetaController');
+Route::resource('dsi', 'DsiController');
+*/
+Route::get('/dsi','DsiController@index')->name('dsi.index');
+Route::get('/dsi/show/{id}','DsiController@show')->name('dsi.show');
+Route::get('/dsi/create','DsiController@create')->name('dsi.create');
+Route::post('/dsi/store','DsiController@store')->name('dsi.store');
+Route::get('/dsi/{id}/edit','DsiController@edit')->name('dsi.edit');
+Route::post('/dsi/update/{id}','DsiController@update')->name('dsi.update');
+Route::post('/dsi/update_fields/{id}','DsiController@update_fields')->name('dsi.update_fields');
+Route::delete('/dsi/destroy/{id}','DsiController@destroy')->name('dsi.destroy');
+Route::delete('/dsi/restore/{id}','DsiController@restore')->name('dsi.restore');
+Route::get('/dsi/history/{id}','DsiController@history')->name('dsi.history');
+
+
+
+Route::get('/dsi/data/{id}','DsiDataController@index')->name('dsi.data.index');
+Route::get('/dsi/data/export/{id}','DsiDataController@export')->name('dsi.data.export');
+Route::delete('/dsi/data/{id}','DsiDataController@destroy')->name('dsi.data.destroy');
+Route::get('/dsi/data/{dsi}/create','DsiDataController@create')->name('dsi.data.create');
+Route::post('/dsi/data/{dsi_id}/store','DsiDataController@store')->name('dsi.data.store');
+Route::get('/dsi/data/show/{id}','DsiDataController@show')->name('dsi.data.show');
+Route::get('/dsi/data/{dsi_id}/edit/{id}','DsiDataController@edit')->name('dsi.data.edit');
+Route::post('/dsi/data/{dsi_id}/update/{id}','DsiDataController@update')->name('dsi.data.update');
+Route::get('/dsi/data/import','DsiDataController@create')->name('dsi.data.import');//ojo
+Route::get('/dsi/data/{dsi_id}/history/{id}','DsiDataController@history')->name('dsi.data.history');
+Route::get('/buscarproductos','DsiDataController@buscarProductos')->name('dsi.data.buscarProductos');
+Route::get('/asociateproductadvance','DsiDataController@asociateProductAdvance')->name('dsi.asociateProductAdvance');
+Route::get('/desaociateproductadvance','DsiDataController@desaociateProductAdvance')->name('dsi.desaociateProductAdvance');
+
+Route::get('/dsi/meta/{dsi_id}/config','DsiMetaController@config')->name('dsi.meta.congig');
+Route::get('/dsi/meta/{dsi_id}/show/{id}','DsiMetaController@show')->name('dsi.meta.show');
+Route::get('/dsi/meta/{dsi_id}','DsiMetaController@index')->name('dsi.meta.index');
+Route::get('/dsi/meta/{dsi_id}/create','DsiMetaController@create')->name('dsi.meta.create');
+Route::post('/dsi/meta/{dsi_id}/store','DsiMetaController@store')->name('dsi.meta.store');
+Route::get('/dsi/meta/{dsi_id}/edit/{id}','DsiMetaController@edit')->name('dsi.meta.edit');
+Route::post('/dsi/meta/{dsi_id}/update/{id}','DsiMetaController@update')->name('dsi.meta.update');
+Route::delete('/dsi/meta/{dsi_id}/destroy/{id}','DsiMetaController@destroy')->name('dsi.meta.destroy');
+Route::delete('/dsi/meta/{dsi_id}/restore/{id}','DsiMetaController@restore')->name('dsi.meta.restore');
+Route::get('/dsi/meta/{dsi_id}/history/{id}','DsiMetaController@history')->name('dsi.meta.history');
+
+Route::get('/dsi/audit/show/{id}','DsiAuditController@show')->name('dsi.audit.show');
+Route::patch('/dsi/audit/update/{id}','DsiAuditController@update')->name('dsi.audit.update');
 
 Auth::routes();
 

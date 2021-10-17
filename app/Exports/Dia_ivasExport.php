@@ -80,7 +80,6 @@ class Dia_ivasExport implements FromCollection, WithHeadings,ShouldAutoSize
     public function headings(): array
     {
         return [
-            
             'id', 
             'tipoid', 
             'identificacion', 
