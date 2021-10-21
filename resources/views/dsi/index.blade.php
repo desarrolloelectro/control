@@ -1,11 +1,13 @@
 @extends('layout')
 @section('content')
-
 <div class="app-title">
     <div>
-            <h1>
-                {!! $title !!}            
-            </h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item active" aria-current="page">{!! $title !!}</li>
+        </ol>
+    </nav>
+            <?php /* importar */ ?>
         @if(Auth::user()->validar_permiso('dia_rep_nov'))
             @if(2 == 1)
             <a href="{{ route('dsi.importar') }}" class="btn btn-success"><i class="fa fa-download" aria-hidden="true"></i>Subir Archivo</a>
@@ -80,8 +82,20 @@
                 @foreach($dsi as $dia_iva)
                 @php
                     $dia_iva->histories();
+                    $permiso_view = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.view');
+                    $permiso_history = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.history');
+                    $permiso_edit = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.edit');
+                    $permiso_authorize = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.authorize');
+                    $permiso_reverse = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.reverse');
+                    $permiso_delete = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.delete');
+                    $permiso_restore = \App\DsiPermission::dsi_permiso($dia_iva->id,'dsi.data.restore');
                 @endphp
-                <tr 
+                <tr dsi="{{$dia_iva->id}}"
+                @if($dia_iva->state==1 && Auth::user()->validar_permiso($permiso_view))
+                    title="Abrir" 
+                    class="cursor-pointer" 
+                    onclick="document.location.href='{{ route('dsi.data.index',['id'=>$dia_iva->id]) }}';"
+                @endif
                 @if($dia_iva->deleted_by!="")
                 style="text-decoration: line-through;" 
                 title="Eliminado por {{ $dia_iva->deleted_by }} en la fecha: {{ custom_date_format($dia_iva->deleted_at) }}"
@@ -114,18 +128,20 @@
                             <a class="btn2 btn-info" title = "Detalle" href="{{ route('dsi.show',['id'=>$dia_iva->id]) }}"><i class="fa fa-search-plus" aria-hidden="true"></i></a>
                             @if($dia_iva->deleted_by=="")
                                
-                                @if(count($dia_iva->histories)>0)
-                                <?php /* <!-- && Auth::user()->validar_permiso('dsi_history') || true --> */ ?>
-                                <a class="btn2 btn-warning" title="Historial" href="{{ route('dsi.history',['id'=>$dia_iva->id]) }}"><i class="fa fa-history" aria-hidden="true"></i></a>
+                                @if (Auth::user()->validar_permiso($permiso_history))
+                                    @if(count($dia_iva->histories)>0)
+                                    <a class="btn2 btn-warning" title="Historial" href="{{ route('dsi.history',['id'=>$dia_iva->id]) }}"><i class="fa fa-history" aria-hidden="true"></i></a>
+                                    @endif
                                 @endif
-                                @if(Auth::user()->validar_permiso('dsi_edit') || true)
+
+                                @if(Auth::user()->validar_permiso($permiso_edit || $permiso_authorize || $permiso_reverse))
                                 <a class="btn2 btn-success" title="Modificar" href="{{ route('dsi.edit',['id'=>$dia_iva->id]) }}"><i class="fa fa-pencil-square" aria-hidden="true"></i></a>
                                 @endif
-                                @if(Auth::user()->validar_permiso('dsi_delete') || true)
+                                @if(Auth::user()->validar_permiso($permiso_delete))
                                 <a class="btn2 btn-danger"  title="Eliminar" href="" onclick="eliminar({{$dia_iva->id}},event)"><i class="fa green fa-times-circle" aria-hidden="true"></i></a>
                                 @endif
                             @else
-                                @if(Auth::user()->validar_permiso('dsi_restore_deleted') || true)
+                                @if(Auth::user()->validar_permiso($permiso_restore))
                                 <a class="btn2 btn-danger"  title="Restaurar Eliminado" action="{{ route('dsi.restore', $dia_iva->id) }}" id="restore{{$dia_iva->id}}" href="" onclick="restaurar({{$dia_iva->id}},event)"><i class="fa green fa-undo" aria-hidden="true"></i></a>
                                 @endif
                             @endif
@@ -163,6 +179,11 @@
     </div>
 </div>
 </div>
+<style>
+    .cursor-pointer{
+        cursor:pointer !important;
+    }
+</style>
 <script type="text/javascript">
     jQuery(function($) {
         $('#buscar_paginacion').keypress(function(event){

@@ -20,7 +20,7 @@ class DsiController extends Controller
      * @return \Illuminate\Http\Response
      */
     use SoftDeletes;
-    private $dev = true;//variable temporal para desarrollo
+    private $dev = false;//variable temporal para desarrollo
 
     public function __construct()
     {
@@ -28,7 +28,8 @@ class DsiController extends Controller
     }
     public function index()
     {
-        $permiso = DsiPermission::dsi_permiso('dsi.data');
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.data');
+        //dd($permiso);
         if(Auth::user()->validar_permiso($permiso) || $this->dev){
             //$dsi = new Dsi();
             $valor = "";
@@ -92,7 +93,9 @@ class DsiController extends Controller
      */
     public function create()
     {
-        if(Auth::user()->validar_permiso('dias_sin_iva_create') || $this->dev){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.create');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $accion = route('dsi.store');
             $metodo = method_field('POST');
             $titulo = "Crear Día sin IVA";
@@ -117,20 +120,27 @@ class DsiController extends Controller
      */
     public function store(Request $request)
     {
-        $dsi = new Dsi();
-        $dsi->last_id = 0;
-        $dsi->name = $request->name;
-        $dsi->date = $request->date;
-        $dsi->state = $request->state;
-        $dsi->permission = $request->permission;
-        $dsi->created_at = date("Y-m-d H:i:s");
-        $dsi->created_by = Auth::user()->coduser;
-        $result = $dsi->save();
-        if($result){
-            return redirect()->route('dsi.index')->with('mensaje', 'Registro ingresado con éxito!');
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.create');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
+            $dsi = new Dsi();
+            $dsi->last_id = 0;
+            $dsi->name = $request->name;
+            $dsi->date = $request->date;
+            $dsi->state = $request->state;
+            $dsi->permission = $request->permission;
+            $dsi->created_at = date("Y-m-d H:i:s");
+            $dsi->created_by = Auth::user()->coduser;
+            $result = $dsi->save();
+            if($result){
+                return redirect()->route('dsi.index')->with('mensaje', 'Registro ingresado con éxito!');
+            }else{
+                return redirect()->route('dsi.index')->with('alerta', 'No se pudo ingresar el registro!');
+            }
         }else{
-            return redirect()->route('dsi.index')->with('alerta', 'No se pudo ingresar el registro!');
+            return view('errors.access_denied');
         }
+    
 
     }
 
@@ -142,11 +152,14 @@ class DsiController extends Controller
      */
     public function show($id)
     {
-        if(Auth::user()->validar_permiso('dsi_show') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.edit');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             $accion = route('dsi.update_fields',['id' => $dsi->id]);
             $metodo = method_field('POST');
-            $titulo = "Detalles de Día sin IVA";
+            $titulo = $dsi->name;
+            $titulo2 = "Detalles";
             $boton = "Modificar";
             $controlador = "dsi";
             $subcon = 'dsi';
@@ -156,7 +169,7 @@ class DsiController extends Controller
             $fields_data = Dsi::$fields_data;
             $enable_meta = Dsi::$meta;
             $permisos = Permiso::orderBy('id','asc')->get();
-            return view('dsi.show',compact('dsi', 'enable_meta', 'accion','types', 'fields_data', 'metodo','titulo','boton','controlador','subcon','editar_datos', 'permisos'));       
+            return view('dsi.show',compact('dsi', 'enable_meta', 'accion','types', 'fields_data', 'metodo','titulo','titulo2','boton','controlador','subcon','editar_datos', 'permisos'));       
 
         }else{
             return view('errors.access_denied');
@@ -171,7 +184,9 @@ class DsiController extends Controller
      */
     public function edit($id)
     {
-        if(Auth::user()->validar_permiso('dsi_edit') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.edit');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             $accion = route('dsi.update',['id' => $dsi->id]);
             $metodo = method_field('POST');
@@ -197,7 +212,9 @@ class DsiController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if(Auth::user()->validar_permiso('dsi_edit') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.edit');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             $dsi->name = $request->name;
             $dsi->date = $request->date;
@@ -217,8 +234,10 @@ class DsiController extends Controller
     }
     public function update_fields(Request $request, $id)
     {
-        //dd($request->all());
-        if(Auth::user()->validar_permiso('dsi_meta_edit') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.edit');
+        $permiso2 = DsiPermission::dsi_permiso(0,'dsi.meta.edit');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             if(isset($request->fields) && !empty($request->fields)) $dsi->fields = json_encode($request->fields);
             else $dsi->fields = "[]";
@@ -252,7 +271,9 @@ class DsiController extends Controller
     
     public function  destroy($id)
     {
-        if(Auth::user()->validar_permiso('dsi_delete') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.archive');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             try {
                 $dsi->deleted_at = date("Y-m-d H:i:s");
@@ -281,7 +302,9 @@ class DsiController extends Controller
     
     public function restore($id)
     {
-        if(Auth::user()->validar_permiso('dsi_restore') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.restore');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $dsi = Dsi::where('id',$id)->firstOrFail();
             try {
                 $dsi->deleted_at = NULL;
@@ -308,24 +331,30 @@ class DsiController extends Controller
     }
     public function history($id)
     {
-        $dsi = Dsi::where('id',$id)->firstOrFail();
-        $valor = "";
-            if(isset($_GET['search'])){
-                $valor = $_GET['search'];
-                session(['valor_session_h' => $valor]);
-            }
-            $valor = session('valor_session_h');
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.history');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
+            $dsi = Dsi::where('id',$id)->firstOrFail();
+            $valor = "";
+                if(isset($_GET['search'])){
+                    $valor = $_GET['search'];
+                    session(['valor_session_h' => $valor]);
+                }
+                $valor = session('valor_session_h');
 
-        $histories = DsiAudit::where('context_id', '=', $id)
-            ->where('context', '=', 'dsi')    
-            ->where(function ($query) use ($valor, $id){
-            $query->where('audit', 'LIKE', '%' . $valor . '%')          
-            ->orWhere('user', 'LIKE', '%' . $valor . '%')          
-            ->orWhere('date', 'LIKE', '%' . $valor . '%');          
-        })->paginate();
-        
-        $title = "Historial de cambios Día sin IVA ".$dsi->name;
-        $url_paginacion = route('dsi.history', ['id' => $id]);
-        return view('dsi.history',compact('dsi','histories','title','valor', 'url_paginacion'));       
+            $histories = DsiAudit::where('context_id', '=', $id)
+                ->where('context', '=', 'dsi')    
+                ->where(function ($query) use ($valor, $id){
+                $query->where('audit', 'LIKE', '%' . $valor . '%')          
+                ->orWhere('user', 'LIKE', '%' . $valor . '%')          
+                ->orWhere('date', 'LIKE', '%' . $valor . '%');          
+            })->paginate();
+            
+            $title = "Historial de cambios Día sin IVA ".$dsi->name;
+            $url_paginacion = route('dsi.history', ['id' => $id]);
+            return view('dsi.history',compact('dsi','histories','title','valor', 'url_paginacion'));   
+        }else{
+            return view('errors.access_denied');
+        }    
     }
 }

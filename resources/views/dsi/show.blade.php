@@ -2,7 +2,13 @@
 @section('content')
 <div class="app-title">
     <div>
-        <h1>{{ $titulo }}</h1>
+    <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dsi.index') }}"><i class="icon fa fa-shopping-bag"></i> Días sin IVA</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('dsi.data.index',['id' => $dsi->id]) }}">{{ $titulo }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $titulo2 }}</li>
+            </ol>
+        </nav>
     </div>
 </div>
 

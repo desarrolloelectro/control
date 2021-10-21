@@ -1,13 +1,19 @@
 @extends('layout')
 @section('content')
+@php
+$permiso_history = \App\DsiPermission::dsi_permiso($dsi_id,'dsi.data.history');
+$permiso_restore = \App\DsiPermission::dsi_permiso($dsi_id,'dsi.data.restore');
+@endphp
 
 <div class="app-title">
     <div>
-        <center>
-            <h1>
-                {{ $title }}            
-            </h1>
-        </center>
+    <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ route('dsi.index') }}"><i class="icon fa fa-shopping-bag"></i> Días sin IVA</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('dsi.data.index',['id' => $dsi_id]) }}">{{ $title }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $title2 }}</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
@@ -58,20 +64,24 @@
                                     <table title="Cambio en {{ $fields_data[$a->f] }} de {{ $a->o }} por: {{ $a->n }}">
                                         <thead>
                                             <tr>
-                                                <th>{{ $fields_data[$a->f] }} Antes
-                                                </td></th>
-                                                <th>{{ $fields_data[$a->f] }} Después</th>
+                                                <th style="min-width: 150px;">{{ $fields_data[$a->f] }} Antes</th>
+                                                <th style="min-width: 150px;">{{ $fields_data[$a->f] }} Después</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <td>{{ $a->o }}<hr>
+                                                <td>{{ $a->o }}
+                                                @if(Auth::user()->validar_permiso($permiso_restore))
+                                                <hr>
                                                     <form method="POST" action="{{ route('dsi.data.update', ['dsi_id'=>$dsi_id, 'id'=>$id]) }}">
                                                     @csrf
                                                     {{ method_field('POST') }}
                                                     <input type="hidden" name="{{ $a->f }}" value="{{ $a->o }}">
+                                                    <input type="hidden" name="submit" value="Actualizar">
                                                     <button onclick="return confirm('Esta seguro que desea realizar este cambio, se actualizará el campo: {{ $fields_data[$a->f] }} con el valor {{ $a->o }}')" type='submit' class='btn btn-warning'>Regresar a este valor</button>
-                                                    </form></td>
+                                                    </form>
+                                                @endif
+                                                </td>
                                                 <td>{{ $a->n }}</td>
                                             </tr>
                                         </tbody>

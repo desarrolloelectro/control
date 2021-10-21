@@ -36,7 +36,7 @@
                             <th>Nombre</th>
                             <th>Marca</th>
                             <th>Línea</th>
-                            <th>Valor</th>
+                            <!--th>Valor</th-->
                         </tr>
                     </thead>
                     <tbody id="contenidoTablaProductos">        
@@ -74,11 +74,11 @@
     var refs_val = document.getElementById('refs').value;
     var refp_val = document.getElementById('refp').value;
     var productItem = sep.children[refs_val].querySelector(".products").children[refp_val];
-    productItem.querySelector(".nombre").value=nombre;
-    productItem.querySelector(".referencia").value=referencia;
-    productItem.querySelector(".valor").value=valor;
+    productItem.querySelector(".nombre").value=atob(nombre);
+    productItem.querySelector(".referencia").value=atob(referencia);
+    //productItem.querySelector(".valor").value=atob(valor);
     productItem.querySelector(".serial").focus();
-    productItem.querySelector(".linea").value=linea;
+    productItem.querySelector(".linea").value=atob(linea);
     convertirnumeroALetrasAll(productItem.querySelector(".valor"));
   }
   function buscarProducto(){
@@ -107,14 +107,13 @@
           var contenidoTablaProductos = document.getElementById('contenidoTablaProductos');
           contenidoTablaProductos.innerHTML = '';
           json.productos.data.forEach(obj => {
-            contenidoTablaProductos.innerHTML += `<tr data-dismiss="modal" title="Haga clic para seleccionar este producto" onclick="rellenarProducto('${obj.nombre}', '${obj.referencia}', '${obj.valor}', '${obj.linea}');">
+            contenidoTablaProductos.innerHTML += `<tr data-dismiss="modal" title="Haga clic para seleccionar este producto" onclick="rellenarProducto('${btoa(obj.nombre)}', '${btoa(obj.referencia)}', '${btoa(obj.valor)}', '${btoa(obj.linea)}');">
               <td>${obj.id}</td>
               <td>${obj.referencia}</td>
               <td>${obj.nombre}</td>
               <td>${obj.marca}</td>
               <td>${obj.linea}</td>
-              <td style="text-align:right;">$ ${ new Intl.NumberFormat("de-DE").format(obj.valor) }</td>
-            <tr>`;
+            <tr>`;//<td style="text-align:right;">$ ${ new Intl.NumberFormat("de-DE").format(obj.valor) }</td>
           });
           //console.log(json);
           contenidoTablaProductos.innerHTML += `<tr><td colspan="6">${json.pagination}<td><tr>`;

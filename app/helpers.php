@@ -7,7 +7,7 @@
 //exit();
 if (!function_exists('custom_currency_format')){
     function custom_currency_format($value){
-        return "$".number_format($value,1,",",".");
+        return "$".number_format($value,0,",",".");
     }
 }
 if (!function_exists('custom_date_format')){

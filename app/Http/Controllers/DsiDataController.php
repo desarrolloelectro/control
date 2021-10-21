@@ -8,6 +8,7 @@ use App\DsiData;
 use App\DsiDataAdvance;
 use App\DsiDataDsm;
 use App\DsiDataProduct;
+use App\DsiPermission;
 use App\Historial;
 use App\Medio_pago;
 use App\Tipo_identificacion;
@@ -29,50 +30,104 @@ class DsiDataController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    private $dev = false;//variable temporal para desarrollo
     public function __construct()
     {
-        //$this->middleware('auth');
+        $this->middleware('auth');
     }
     public function listEmptyAdvance($dsi_id, $id)
     { 
-        $dia_iva = DsiData::where('id',$id)->where('dsi_id',$dsi_id)->firstOrFail();
-        $dia_iva->dsi_data_advances();
-        $res = [];
-        foreach($dia_iva->dsi_data_advances as $id => $dsi_data_advances){ 
-            if($dsi_data_advances->dsi_data_product_id == ''){
-                $dsi_data_advances->fecha_recibo = custom_date_format($dsi_data_advances->fecha_recibo, "d/m/Y");
-                $res[]=$dsi_data_advances;
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.data.view');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
+            $dia_iva = DsiData::where('id',$id)->where('dsi_id',$dsi_id)->firstOrFail();
+            $dia_iva->dsi_data_advances();
+            $res = [];
+            foreach($dia_iva->dsi_data_advances as $id => $dsi_data_advances){
+                if($dsi_data_advances->saldo > 0){
+                    $dsi_data_advances->fecha_recibo = custom_date_format($dsi_data_advances->fecha_recibo, "d/m/Y");
+                    $dsi_data_advances->saldo = $dsi_data_advances->saldo;
+                    $res[]=$dsi_data_advances;
+                }
+            }
+            return $res;
+        }else{
+            return view('errors.access_denied');
+        }
+    }
+    public function listProductAdvance(Request $request)
+    {
+        //dd($request);
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.data.view');
+        if(Auth::user()->validar_permiso($permiso) || true){
+            $p = DsiDataProduct::findOrFail($request->p);
+            $p->dsi_data_all_advances();
+            if(!empty($p->dsi_data_all_advances)){
+                $res = [];
+                foreach($p->dsi_data_all_advances as $id => $dsi_data_advances){ 
+                        $dsi_data_advances->fecha_recibo = custom_date_format($dsi_data_advances->fecha_recibo, "d/m/Y");
+                        $dsi_data_advances->value = $dsi_data_advances->pivot->value;
+                        $dsi_data_advances->num_recibo = $dsi_data_advances->num_recibo;
+                        $dsi_data_advances->fecha_recibo = $dsi_data_advances->fecha_recibo;
+                        $dsi_data_advances->value = $dsi_data_advances->value;
+                        $res[]=$dsi_data_advances;
+                }
+                return response()->json([
+                    'success' => true,
+                    'valor' => $p->valor,
+                    'data' =>$res,
+                    'message' => "ok"
+                ]);
+                return $p->dsi_data_advances;
+            }else{
+                return response()->json([
+                    'ok' => false,
+                    'message' => "error"
+                ]);
             }
         }
-        return $res;
+        
+
     }
+    
     public function asociateProductAdvance(Request $request)
     {
+        //pendiente permiso
         $token1 = $request->_token;
         $token2 = csrf_token();
         
         $val_c_token = md5('?p='.$request->p.'&a='.$request->a);
         if ($token1 == $token2 &&  $request->c_token==$val_c_token){
             $dsi_data_advance = DsiDataAdvance::findOrFail($request->a);
-            if($dsi_data_advance->dsi_data_product_id!=''){    
+            $dsi_data_product = DsiDataProduct::findOrFail($request->p);
+            if($dsi_data_advance->saldo < $request->v){    
                 return response()->json([
                     'ok' => false,
-                    'message' => "error"
+                    'message' => "Saldo insuficiente"
                 ]);
-            }       
-            $dsi_data_advance->dsi_data_product_id = $request->p;
-            $result = $dsi_data_advance->save();
+            }
+            $count_b = count($dsi_data_advance->dsi_data_all_products);
+            $dsi_data_advance->dsi_data_all_products()->attach($dsi_data_product, [
+                'state' => 1, 
+                'value' => $request->v,
+                'created_at' => date("Y-m-d H:i:s"),
+                'created_by' => Auth::user()->coduser
+             ]);
+             $count_a = count($dsi_data_advance->dsi_data_all_products);
+             $result = $count_a==$count_b;
+            //$dsi_data_advance->dsi_data_product_id = $request->p;
+            //$result = $dsi_data_advance->save();
             if($result){
                 $listEmptyAdvance = $this->listEmptyAdvance($request->i,  $request->d);//i = dsi_id d = dsi_data_id
                 return response()->json([
                     'success' => $result,
                     'data' => $listEmptyAdvance,
-                    'message' => $result ? "ok" : "error"
+                    'message' => "Anticipo de ".custom_currency_format($request->v)." registrado"
                 ]);
             }else{
                 return response()->json([
                     'ok' => false,
-                    'message' => "error"
+                    'message' => "error1"
                 ]);
             }
            
@@ -80,12 +135,13 @@ class DsiDataController extends Controller
         }else{
             return response()->json([
                 'ok' => false,
-                'message' => "error"
+                'message' => "error2"
             ]);
         }
     }
     public function desaociateProductAdvance(Request $request)
     {
+        //pendiente permiso
         $dsi_data_advance = DsiDataAdvance::findOrFail($request->dsi_advance_id);
         $dsi_data_advance->dsi_data_product_id = NULL;
         $result = $dsi_data_advance->save();
@@ -96,6 +152,9 @@ class DsiDataController extends Controller
     }
     public function index(Request $request, $id)
     {
+        $permiso = DsiPermission::dsi_permiso($id,'dsi.data.view');
+        //dd($permiso);
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
         $controlador = "dsi.data";
         $subcon = 'dsi.data';
         $dsi = Dsi::find($id);
@@ -193,6 +252,7 @@ class DsiDataController extends Controller
        Revisar los campos y crear la tabla de forma dinamica, mirar la posibilidad de reducir a columna fields a una sola para manejar estados con 1 y 0 y saber si se usa o no el campo
        eso facilitará ell uso de campos extra
        */ 
+      /*
             $dsi_data = DsiData::where('dsi_id', $id)->get();
             $table_name = $dsi_data->getTable();
             $dsi_data_fields = DB::getSchemaBuilder()->getColumnListing($table_name);
@@ -203,9 +263,10 @@ class DsiDataController extends Controller
             echo "No";
             echo $request->ip();
             //dd($id);
-        //}else{
-         //   return view('errors.access_denied');
-        //}
+            */
+        }else{
+            return view('errors.access_denied');
+        }
     }
     public function export(Request $request, $id)
     {
@@ -256,11 +317,12 @@ class DsiDataController extends Controller
         $dateonly=date("Y-m-d", $fechahora);
         $datehour= date("Y-m-d H:i:s", $fechahora);
         $fecha_sistema = $dateonly;
-
-        if(Auth::user()->validar_permiso('dsi_data_create') || true){
+        $permiso = DsiPermission::dsi_permiso(0,'dsi.data.create');
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
             $accion = route('dsi.data.store', ['dsi_id' => $dsi->id]);
             $metodo = method_field('POST');
             $titulo = $dsi->name;
+            $titulo2 = "Nuevo";
             $boton = "Guardar";
             $boton2 = "Guardar y continuar editando";
 
@@ -297,13 +359,14 @@ class DsiDataController extends Controller
             $date = date("Y-m-d");
             if($date==$dsi->date){
                 $tiposventa[] = 'Contado';
+                $anticipo = false;
             }else{
                 $tiposventa[] = 'Anticipo';
+                $anticipo = true;
             }
-
-            return view('dsi.data.create',compact('dsi', 'tipo_identificaciones','tipo_facturas','tipo_documentos',
+            return view('dsi.data.create',compact('anticipo', 'dsi', 'tipo_identificaciones','tipo_facturas','tipo_documentos',
             'categorias','generos','unidades','iva_estados','fecha_sistema','medio_pagos',
-        'accion','metodo','titulo','boton','boton2','controlador','subcon','dia_iva','documentsm','documentdsm', 'ayuda', 'tiposventa', 'enable_meta'));
+        'accion','metodo','titulo','titulo2','boton','boton2','controlador','subcon','dia_iva','documentsm','documentdsm', 'ayuda', 'tiposventa', 'enable_meta'));
         }else{
             return view('errors.access_denied');
         }
@@ -317,6 +380,8 @@ class DsiDataController extends Controller
      */
     public function store(Request $request, $dsi_id)
     {
+        $permiso_create = DsiPermission::dsi_permiso(0,'dsi.data.create');
+        if(Auth::user()->validar_permiso($permiso_create)){
         $boton = "Guardar";
         $boton2 = "Guardar y continuar editando";
         //var_dump($dsi_id);
@@ -467,6 +532,9 @@ class DsiDataController extends Controller
         }else{
             return redirect()->route('dsi.data.index',['id' => $dsi_id])->with('alerta', 'Hubo un error al ingresadar los datos');
         }
+    }else{
+        return view('errors.access_denied');
+    }
 
         //dd($request->all());
     }
@@ -477,9 +545,14 @@ class DsiDataController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($dsi_id,$id)
     {
-        //
+        $permiso = \App\DsiPermission::dsi_permiso($dsi_id,'dsi.data.show');
+        if(Auth::user()->validar_permiso($permiso) || $this->dev){
+            return view('errors.access_denied');
+        }else{
+            return view('errors.access_denied');
+        }
     }
 
     /**
@@ -491,19 +564,29 @@ class DsiDataController extends Controller
     public function edit($dsi_id,$id)
     {
         //dd($dsi_id." - ".$id);
+        /**
+         * Camel Case
+         * nombreFunction
+         * 
+         * Snake
+         * nombre_funcion
+         * 
+         */
         $controlador = "dsi.data.edit";
         $subcon = 'dsi.data.edit';
+        $permiso_dsi_view = DsiPermission::dsi_permiso(0,'dsi.view');
+        $permiso_edit = DsiPermission::dsi_permiso($dsi_id,'dsi.data.edit');
+        $permiso_authorize = DsiPermission::dsi_permiso($dsi_id,'dsi.data.authorize');
+        $permiso_reverse = DsiPermission::dsi_permiso($dsi_id,'dsi.data.reverse');
         
-        if(Auth::user()->validar_permiso('dia_edit_nov')){
-            
+        if(Auth::user()->validar_permiso($permiso_dsi_view) && Auth::user()->validar_permiso($permiso_edit) || Auth::user()->validar_permiso( $permiso_authorize) || Auth::user()->validar_permiso($permiso_reverse)) {
             $dsi = Dsi::find($dsi_id);
             $meta_fields = json_decode($dsi->meta_fields,true);
             $dia_iva = DsiData::where('id',$id)->where('dsi_id',$dsi_id)->firstOrFail();
-            //$dia_iva = DsiData::where('id',$id)->firstOrFail();
             $dia_iva->dsi_metas();
             $dsi_metas = $dia_iva->dsi_metas;
 
-            if($dia_iva->caja2_estado_id == 6 && !Auth::user()->validar_permiso('dia_revertir')){
+            if($dia_iva->caja2_estado_id == 6 && !Auth::user()->validar_permiso($permiso_reverse)){
                 return view('errors.access_denied');
             }
 
@@ -522,6 +605,7 @@ class DsiDataController extends Controller
             //dsi/data/{dsi_id}/update/{id}
             $metodo = method_field('POST');
             $titulo = "Actualizar Día sin IVA Noviembre";
+            $titulo2 = "Editar";
             $boton = "Actualizar";
             $boton2 = "Actualizar y continuar editando";
             $enable_meta = DSI::$meta;
@@ -539,15 +623,25 @@ class DsiDataController extends Controller
             $dsi_data_dsms = $dia_iva->dsi_data_dsms;
             
             foreach($dia_iva->dsi_data_dsms as $id => $dsms){
-                $dia_iva->dsi_data_dsms[$id]->dsi_data_products();                
+                $dia_iva->dsi_data_dsms[$id]->dsi_data_products();             
                 //$dsms->dsi_data_products();                
             }
             //dd($dia_iva->dsi_data_advances);
             
-            
-            return view('dsi.data.create',compact('titulo','historicos','tipo_identificaciones','tipo_facturas','tipo_documentos',
-            'categorias','generos','unidades','iva_estados','medio_pagos',
-            'dia_iva','accion','metodo','boton','controlador','subcon', 'dsi', 'meta_fields', 'dsi_metas', 'ayuda', 'documentsm', 'documentdsm', 'tiposventa', 'boton2','enable_meta'));  
+            if ($dia_iva->tipoventa == "Anticipo"){
+                $date = date("Y-m-d");
+                if($date==$dsi->date){
+                    $anticipo = false;
+                }else{
+                    $anticipo = true;
+                }
+            }else{
+                $anticipo = false;
+            }
+            return view('dsi.data.create',compact('anticipo', 'titulo','titulo2','historicos','tipo_identificaciones',
+            'tipo_facturas','tipo_documentos','categorias','generos','unidades','iva_estados','medio_pagos',
+            'dia_iva','accion','metodo','boton','controlador','subcon', 'dsi', 'meta_fields', 'dsi_metas', 'ayuda', 
+            'documentsm', 'documentdsm', 'tiposventa', 'boton2','enable_meta'));  
 
         }else{
             return view('errors.access_denied');
@@ -586,26 +680,29 @@ class DsiDataController extends Controller
                         }
                     }
                 }
+               
                 if(isset($request->dsi_ant_num_dsm)){
                     foreach($request->dsi_ant_num_dsm as $id => $num_dsm){
-                        if($request->dsi_ant_dsm_id[$id]==""){
-                            $dsi_data_dsm = new DsiDataDsm;
-                            $dsi_data_dsm->dsi_data_id = $dsi_data->id;
-                            $dsi_data_dsm->dsm =  $request->dsi_ant_dsm[$id];
-                            $dsi_data_dsm->num_dsm = $request->dsi_ant_num_dsm[$id];
-                            $dsi_data_dsm->save();
-                        
-                            if(isset($request->productItemnombre[$num_dsm])){
-                                foreach($request->productItemnombre[$num_dsm] as $id2 => $anticipo){
-                                    if($request->productItemid[$num_dsm][$id2]==""){
-                                        $dsi_data_product = new DsiDataProduct;
-                                        $dsi_data_product->dsi_data_dsm_id = $dsi_data_dsm->id;
-                                        $dsi_data_product->nombre = $request->productItemnombre[$num_dsm][$id2];
-                                        $dsi_data_product->referencia = $request->productItemreferencia[$num_dsm][$id2];
-                                        $dsi_data_product->serial = $request->productItemserial[$num_dsm][$id2];
-                                        $dsi_data_product->valor = $request->productItemvalor[$num_dsm][$id2];
-                                        $dsi_data_product->linea = $request->productItemlinea[$num_dsm][$id2];
-                                        $dsi_data_product->save();
+                        if(isset($request->dsi_ant_num_dsm[$id]) && $request->dsi_ant_num_dsm[$id]!=""){
+                            if(isset($request->dsi_ant_dsm_id[$id]) && $request->dsi_ant_dsm_id[$id]==""){
+                                $dsi_data_dsm = new DsiDataDsm;
+                                $dsi_data_dsm->dsi_data_id = $dsi_data->id;
+                                $dsi_data_dsm->dsm = (isset($request->dsi_ant_dsm[$id]) && $request->dsi_ant_dsm[$id]!=null) ? $request->dsi_ant_dsm[$id] : "PFDI";
+                                $dsi_data_dsm->num_dsm = $request->dsi_ant_num_dsm[$id];
+                                $dsi_data_dsm->save();
+                            
+                                if(isset($request->productItemnombre[$num_dsm])){
+                                    foreach($request->productItemnombre[$num_dsm] as $id2 => $anticipo){
+                                        if($request->productItemid[$num_dsm][$id2]==""){
+                                            $dsi_data_product = new DsiDataProduct;
+                                            $dsi_data_product->dsi_data_dsm_id = $dsi_data_dsm->id;
+                                            $dsi_data_product->nombre = $request->productItemnombre[$num_dsm][$id2];
+                                            $dsi_data_product->referencia = $request->productItemreferencia[$num_dsm][$id2];
+                                            $dsi_data_product->serial = $request->productItemserial[$num_dsm][$id2];
+                                            $dsi_data_product->valor = $request->productItemvalor[$num_dsm][$id2];
+                                            $dsi_data_product->linea = $request->productItemlinea[$num_dsm][$id2];
+                                            $dsi_data_product->save();
+                                        }
                                     }
                                 }
                             }
@@ -614,10 +711,17 @@ class DsiDataController extends Controller
                 }
                 $dsi_data->dsi_data_dsms();
                 if(isset($dsi_data->dsi_data_dsms)){
-                    
+                     
                     foreach($dsi_data->dsi_data_dsms as $id => $dsi_data_dsm){
+                        if(isset($request->dsi_ant_dsm_id[$id]) && $request->dsi_ant_dsm_id[$id]!=""){
+                            $dsi_data_dsm = DsiDataDsm::find($request->dsi_ant_dsm_id[$id]);
+                            if(isset($request->dsi_ant_num_dsm[$id])) $dsi_data_dsm->num_dsm = $request->dsi_ant_num_dsm[$id];
+                            $dsi_data_dsm->save();
+                        }
                         $num_dsm = $dsi_data_dsm->num_dsm;
-                        if(!isset($request->dsi_ant_num_dsm) || !in_array($num_dsm,$request->dsi_ant_num_dsm)){
+                        //if(!isset($request->dsi_ant_num_dsm[$id]) || !in_array($num_dsm,$request->dsi_ant_num_dsm)){
+                           // var_dump($dsi_data_dsm);
+                           // dd($request->all());
                             if(isset($request->productItemnombre[$num_dsm])){
                                 foreach($request->productItemnombre[$num_dsm] as $id2 => $anticipo){
                                     //dd([$request->all(),$dsi_data_dsm, $dsi_id, $id, $id2, $anticipo]);
@@ -633,7 +737,7 @@ class DsiDataController extends Controller
                                     }
                                 }
                             }
-                        }
+                        //}
                     }
                 }
             
@@ -656,13 +760,14 @@ class DsiDataController extends Controller
         if(isset($request->vrtotal)) $dsi_data->vrtotal = $request->vrtotal;
         if(isset($request->mediopago)) $dsi_data->mediopago = $request->mediopago;
         if(isset($request->numsoporte)) $dsi_data->numsoporte = $request->numsoporte;
-        if(isset($request->fechaentrega)) $dsi_data->fechaentrega = $request->fechaentrega;
+        if(isset($request->fechaentrega)) $dsi_data->fechaentrega = ($request->fechaentrega!="") ? $request->fechaentrega : null;
         if(isset($request->pvppublico)) $dsi_data->pvppublico = $request->pvppublico;
         if(isset($request->obs)) $dsi_data->obs = $request->obs;
         if(isset($request->factura)) $dsi_data->factura = $request->factura;
         if(isset($request->estado_id)) $dsi_data->estado_id = $request->estado_id;
         if(isset($request->banco_estado_id)) $dsi_data->banco_estado_id = $request->banco_estado_id;
         if(isset($request->caja2_estado_id)) $dsi_data->caja2_estado_id = $request->caja2_estado_id;
+        
         $dsi_data->user_update = Auth::id();
         $result = $dsi_data->save();
 
@@ -686,9 +791,13 @@ class DsiDataController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy($dsi_id, $id)
     {
-        //
+        $dsi_data = DsiData::where('dsi_id',$dsi_id)->where('id',$id)->firstOrFail();
+    }
+    public function restore($dsi_id, $id)
+    {
+        $dsi_data = DsiData::where('dsi_id',$dsi_id)->where('id',$id)->firstOrFail();
     }
     public function history($dsi_id, $id)
     {
@@ -710,8 +819,9 @@ class DsiDataController extends Controller
             ->orWhere('user', 'LIKE', '%' . $valor . '%')          
             ->orWhere('date', 'LIKE', '%' . $valor . '%');          
         })->paginate();       
-        $title = "Historial de cambios de registro ".$id." en ".$dsi->name;
+        $title = $dsi->name;
+        $title2 = "Historial de cambios";
         $url_paginacion = route('dsi.data.history', ['dsi_id' => $dsi_id, 'id' => $id]);
-        return view('dsi.data.history',compact('dsi_data','dsi_id','id', 'fields_data','histories','title','valor', 'url_paginacion'));       
+        return view('dsi.data.history',compact('dsi_data','dsi_id','id', 'fields_data','histories','title','title2','valor', 'url_paginacion'));       
     }
 }

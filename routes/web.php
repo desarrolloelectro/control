@@ -11,14 +11,10 @@ use Illuminate\Support\Facades\Route;
 | routes are loaded by the RouteServiceProvider within a group which
 | contains the "web" middleware group. Now create something great!
 |
-*/
 Route::view('/', 'welcome');
-/*
-Route::get('/', function () {
-    //return view('welcome');
-    return redirect()->route('login');
-});
 */
+Route::view('/', 'auth.login');
+
 
 
 
@@ -304,7 +300,7 @@ Route::get('/dsi/data/export/{id}','DsiDataController@export')->name('dsi.data.e
 Route::delete('/dsi/data/{id}','DsiDataController@destroy')->name('dsi.data.destroy');
 Route::get('/dsi/data/{dsi}/create','DsiDataController@create')->name('dsi.data.create');
 Route::post('/dsi/data/{dsi_id}/store','DsiDataController@store')->name('dsi.data.store');
-Route::get('/dsi/data/show/{id}','DsiDataController@show')->name('dsi.data.show');
+Route::get('/dsi/data/{dsi_id}/show/{id}','DsiDataController@show')->name('dsi.data.show');
 Route::get('/dsi/data/{dsi_id}/edit/{id}','DsiDataController@edit')->name('dsi.data.edit');
 Route::post('/dsi/data/{dsi_id}/update/{id}','DsiDataController@update')->name('dsi.data.update');
 Route::get('/dsi/data/import','DsiDataController@create')->name('dsi.data.import');//ojo
@@ -312,6 +308,7 @@ Route::get('/dsi/data/{dsi_id}/history/{id}','DsiDataController@history')->name(
 Route::get('/buscarproductos','DsiDataController@buscarProductos')->name('dsi.data.buscarProductos');
 Route::get('/asociateproductadvance','DsiDataController@asociateProductAdvance')->name('dsi.asociateProductAdvance');
 Route::get('/desaociateproductadvance','DsiDataController@desaociateProductAdvance')->name('dsi.desaociateProductAdvance');
+Route::get('/listproductadvance','DsiDataController@listProductAdvance')->name('dsi.listProductAdvance');
 
 Route::get('/dsi/meta/{dsi_id}/config','DsiMetaController@config')->name('dsi.meta.congig');
 Route::get('/dsi/meta/{dsi_id}/show/{id}','DsiMetaController@show')->name('dsi.meta.show');

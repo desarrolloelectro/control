@@ -66,11 +66,15 @@
                 <label>Estado</label>
                 @isset($dia_iva)
                     <div>
-                        @if(isset($dsi_data_advances) && $dsi_data_advances->dsi_data_product_id != '')
+                    @if(isset($dsi_data_advances))
+                        @if($dsi_data_advances->saldo == 0)
                             <button type="button" class="btn2 btn-success" title="Este anticipo ya ha sido utilizado"><i class="fa fa-check"></i></button> Utilizado
-                        @else
+                        @elseif($dsi_data_advances->saldo == $dsi_data_advances->valor_recibo)
                             <button type="button" class="btn2 btn-warning" title="Este anticipo aún no ha sido utilizado"><i class="fa fa-warning"></i></button> Pendiente
+                        @else
+                            <button type="button" class="btn2 btn-warning" title="Este anticipo aún tiene saldo disponible"><i class="fa fa-money"></i></button> Saldo {{ custom_currency_format($dsi_data_advances->saldo) }}
                         @endif
+                    @endif
                     </div>
                 @endisset
             </div>

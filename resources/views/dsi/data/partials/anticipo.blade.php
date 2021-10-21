@@ -15,11 +15,11 @@
     </div>
 </div>
 <center style="width: 100%;display:{{ (isset($dia_iva) && isset($dia_iva->tipoventa) && $dia_iva->tipoventa == 'Anticipo') ? 'block': 'none'}};">
-    <div class="col-md-11">
+    <div class="col-md-12">
+      <h3 class="h5-dark">Anticipos</h3>
         <div class="form-group" id="divanticipo">       
             <div class="row justify-content-center">
                 <fieldset class="col-12 col-md-12 px-3">
-                    <legend><h1>Anticipos:</h1></legend>
                     <div id="advances"><?php 
                     if(isset($dia_iva)){
                         if(!empty($dia_iva->dsi_data_advances)){
@@ -31,12 +31,15 @@
                     }
                     ?></div>
                     <div>
+                        @if($editar_datos)
                         <button type="button" onclick="addAdvance();" title="Agregar documento separado" id="agregar_doc_separado" 
                         style="" class="btn btn-primary">
                         Agregar Otro Anticipo
                         </button>
+                        <input type="submit" id="btn-enviar2" name="submit" value="{{ $boton2 }}"  class="btn btn-success">
                         <br>
                         <br>
+                        @endif
                     </div>
                 </fieldset>
             </div>    
@@ -50,7 +53,7 @@
                 //dsi_data_products
                 foreach($dia_iva->dsi_data_dsms as $id => $dsi_data_dsms){ ?>
                 <center class="separateItem">
-                    @include('dsi.data.partials.templetes.addseparate',['documentdsm' => $documentdsm, 'ayuda' => $ayuda, 'dsi_data_dsms' => $dsi_data_dsms])
+                    @include('dsi.data.partials.templetes.addseparate',['editar_datos'=>$editar_datos,'documentdsm' => $documentdsm, 'ayuda' => $ayuda, 'dsi_data_dsms' => $dsi_data_dsms])
                 </center>                         
                 <?php }
             }
@@ -58,6 +61,7 @@
         }
     ?></div>
     <div>
+        @if($editar_datos)
         <button type="button" onclick="addSeparate();" title="Agregar documento separado" id="agregar_doc_separado" 
         style="" class="btn btn-primary">
         Agregar Otro Separado
@@ -65,6 +69,7 @@
         <input type="submit" id="btn-enviar2" name="submit" value="{{ $boton2 }}"  class="btn btn-success">
         <br>
         <br>
+        @endif
     </div>
 </div>
 @include('dsi.data.partials.styles')

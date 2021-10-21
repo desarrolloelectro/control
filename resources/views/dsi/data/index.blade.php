@@ -4,27 +4,38 @@
 $fields_view = json_decode($dsi->fields_view,true);
 $meta_fields_view = json_decode($dsi->meta_fields_view,true);
 $dsi->metas();
+$permiso_show = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.show');
+$permiso_edit = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.edit');
+$permiso_authorize = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.authorize');
+$permiso_reverse = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.reverse');
+$permiso_history = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.history');
+$permiso_archive = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.archive');
+$permiso_report = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.report');
 @endphp
 <div class="app-title">
     <div>
-        <h1>
-            {{ $title }}
-            <a href="{{ route('dsi.data.create', ['dsi' => $dsi->id] ) }}" class="btn btn-primary"><i class="fa fa-plus-circle" aria-hidden="true"></i>Nuevo</a>
-            @if(Auth::user()->validar_permiso('dia_rep_nov'))
-                <form style="display:inline;"  id="form_rep{{ $dsi->id }}" class = "form-table" action="{{ route('reportes.dsi_export') }}" method="POST">
-                    {{ csrf_field() }}
-                    {{ method_field('POST') }}
-                    <input type="hidden" name="id" value="{{ $dsi->id }}">
-                    <input type="hidden" name="permission" value="{{ $dsi->permission }}">
-                    <input type="hidden" name="filename" value="{{ $dsi->name }}">
-                    <a style="color: #FFF;cursor:pointer;" onclick="document.getElementById('form_rep{{ $dsi->id }}').submit();" class="btn btn-success" title="Descargar Informe"><i class="fa fa-download" aria-hidden="true"></i>Descargar Informe</a>
-                </form>
-                @if(2 == 1)
-                <a href="{{ route('dsi.data.importar') }}" class="btn btn-success"><i class="fa fa-download" aria-hidden="true"></i>Subir Archivo</a>
-                @endif
-                <a href="{{ route('dsi.show', ['id' => $dsi->id]) }}" class="btn btn-info"><i class="fa fa-search-plus" aria-hidden="true"></i>Detalles</a>
-            @endif
-        </h1>
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ route('dsi.index') }}"><i class="icon fa fa-shopping-bag"></i> Días sin IVA</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ $title }}</li>
+        </ol>
+    </nav>
+        
+    <a href="{{ route('dsi.data.create', ['dsi' => $dsi->id] ) }}" class="btn btn-primary"><i class="fa fa-plus-circle" aria-hidden="true"></i>Nuevo</a>
+    @if(Auth::user()->validar_permiso($permiso_report))
+    <form style="display:inline;"  id="form_rep{{ $dsi->id }}" class = "form-table" action="{{ route('reportes.dsi_export') }}" method="POST">
+        {{ csrf_field() }}
+        {{ method_field('POST') }}
+        <input type="hidden" name="id" value="{{ $dsi->id }}">
+        <input type="hidden" name="permission" value="{{ $dsi->permission }}">
+        <input type="hidden" name="filename" value="{{ $dsi->name }}">
+        <a style="color: #FFF;cursor:pointer;" onclick="document.getElementById('form_rep{{ $dsi->id }}').submit();" class="btn btn-success" title="Descargar Informe"><i class="fa fa-download" aria-hidden="true"></i>Descargar Informe</a>
+    </form>
+    @if(2 == 1)
+    <a href="{{ route('dsi.data.importar') }}" class="btn btn-success"><i class="fa fa-download" aria-hidden="true"></i>Subir Archivo</a>
+    @endif
+    <a href="{{ route('dsi.show', ['id' => $dsi->id]) }}" class="btn btn-info"><i class="fa fa-search-plus" aria-hidden="true"></i>Detalles</a>
+    @endif
     </div>
 </div>
 
@@ -56,7 +67,7 @@ $dsi->metas();
         <table class="table table-hover table-bordered table-striped" id="sampleTable">
             <!--    COMIENZA CONTENIDO TABLA   -->
             <thead>
-                <tr>
+                <tr >
                     @foreach($fields_view as $field_view)
                     <th>{!! $fields[$field_view] !!}</th>
                     @endforeach
@@ -76,7 +87,7 @@ $dsi->metas();
                 </thead> 
                 <tbody>
                 @foreach($dsi_data as $dia_iva)
-                <tr>
+                <tr dsi="{{$dia_iva->dsi_id}}" dsi_data_id="{{$dia_iva->id}}">
                     @foreach($fields_view as $field_view) @php $field_view_ft = $field_view."_ft"; $field_view_fst = $field_view."_fst"; @endphp 
                         @if(isset($dia_iva->$field_view_fst)) <?php /** Campo con Formato y Estilos */?>
                             <td>{!! $dia_iva->$field_view_fst !!}</td>
@@ -107,12 +118,20 @@ $dsi->metas();
                         <form id = "form{{$dia_iva->id}}" class = "form-table" action="{{ route('dsi.data.destroy', $dia_iva->id) }}" method="POST">
                             {{ csrf_field() }}
                             {{ method_field('DELETE') }}
-                            <a class="btn2 btn-info" title = "Detalle" href="{{ route('dsi.data.show',['id'=>$dia_iva->id]) }}"><i class="fa fa-search-plus" aria-hidden="true"></i></a>
+                            
+                            @if(Auth::user()->validar_permiso($permiso_show))
+                            <a class="btn2 btn-info" title = "Detalle" href="{{ route('dsi.data.show',['dsi_id'=>$dia_iva->dsi_id, 'id'=>$dia_iva->id]) }}"><i class="fa fa-search-plus" aria-hidden="true"></i></a>
+                            @endif
+                            
+                            @if(Auth::user()->validar_permiso($permiso_edit || $permiso_authorize || $permiso_reverse))
                             <a class="btn2 btn-success" title = "Modificar" href="{{ route('dsi.data.edit',['dsi_id'=>$dia_iva->dsi_id,'id'=>$dia_iva->id]) }}"><i class="fa fa-pencil-square" aria-hidden="true"></i></a>
-                            @if(count($dia_iva->histories)>0)
+                            @endif
+                            @if(Auth::user()->validar_permiso($permiso_history))
+                                @if(count($dia_iva->histories)>0)
                                 <a class="btn2 btn-warning" title="Historial" href="{{ route('dsi.data.history',['dsi_id'=>$dia_iva->dsi_id,'id'=>$dia_iva->id]) }}"><i class="fa fa-history" aria-hidden="true"></i></a>
                                 @endif
-                            @if(Auth::user()->validar_permiso('dia_delete_nov'))
+                            @endif
+                            @if(Auth::user()->validar_permiso($permiso_archive))
                             <a class="btn2 btn-danger"  title = "Eliminar" href="" onclick="eliminar({{$dia_iva->id}},event)"><i class="fa green fa-times-circle" aria-hidden="true"></i></a>
                             @endif
                         </form>
@@ -150,6 +169,7 @@ $dsi->metas();
     </div>
 </div>
 </div>
+
 		<script type="text/javascript">
 			jQuery(function($) {
                 $('#buscar_paginacion').keypress(function(event){

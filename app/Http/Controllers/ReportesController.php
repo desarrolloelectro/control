@@ -19,6 +19,10 @@ use App\Exports\Dia_ivasExport;
 use App\Exports\CotizacionesExport;
 use App\Exports\UsuariosExport;
 
+use App\Dsi;
+use App\DsiData;
+use App\Exports\DsiExport;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
@@ -210,25 +214,38 @@ class ReportesController extends Controller
 
 
 
-    public function dia_ivas_export (Request $r){
+    public function dsi_export (Request $request){
 
-        if(Auth::user()->validar_permiso('dia_rep_nov')){
-        
+        //if(Auth::user()->validar_permiso($request->permission)){
             date_default_timezone_set('America/Bogota');
             $fechahora=time();
             $dateonly=date("Y-m-d", $fechahora);
             $datehour= date("Y-m-d H:i:s", $fechahora);
-            
+            $data = \App\DsiData::where('dsi_id',$request->id)->orderBy('id','asc')->get();
+            if(count($data)== 0){
+                return redirect()->route('dsi.index')->with('alerta', 'No se encontraron registros!');
+            }
+            $data = new DsiExport($data, $request->id);
+            //print_r($data->collection());
+            //exit();
+            return Excel::download($data,$request->filename."_".$dateonly.".xlsx");
+        //}else{
+         //   return view('errors.access_denied');
+        //}
+    }
+
+    public function dia_ivas_export (Request $r){
+        if(Auth::user()->validar_permiso('dia_rep_nov')){
+            date_default_timezone_set('America/Bogota');
+            $fechahora=time();
+            $dateonly=date("Y-m-d", $fechahora);
+            $datehour= date("Y-m-d H:i:s", $fechahora);
             $query = Dia_iva::query();
             $consulta = $query->orderBy('id','asc')->get();
-            
             if(count($consulta)== 0){
                 return redirect()->route('dia_ivas.index')->with('alerta', 'No se encontraron registros!');
             }
-
             return Excel::download(new Dia_ivasExport($consulta),"REPORTE_DIA_SIN_IVA_NOVIEMBRE_2020_".$dateonly.".xlsx");
-                        
-        
         }else{
             return view('errors.access_denied');
         }
@@ -237,6 +254,3 @@ class ReportesController extends Controller
     
     
 }
-
-
-

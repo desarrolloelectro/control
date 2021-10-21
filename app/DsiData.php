@@ -119,8 +119,8 @@ class DsiData extends Model
     }
     public function getCaja2EstadoIdFstAttribute()
     {
-        $color = $this->caja2_estado_id != null ? $this->banco_estado->color : '';
-        $estado = $this->caja2_estado_id != null ? $this->banco_estado->nombre : '';
+        $color = $this->caja2_estado_id != null ? $this->caja2_estado->color : '';
+        $estado = $this->caja2_estado_id != null ? $this->caja2_estado->nombre : '';
         return '<span class="span-estilo" style = "background: '. $color .';">'. $estado .'</span>';
     }
     public function getUrlimagenFstAttribute()
