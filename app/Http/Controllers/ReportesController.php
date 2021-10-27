@@ -221,7 +221,7 @@ class ReportesController extends Controller
             $fechahora=time();
             $dateonly=date("Y-m-d", $fechahora);
             $datehour= date("Y-m-d H:i:s", $fechahora);
-            $data = \App\DsiData::where('dsi_id',$request->id)->orderBy('id','asc')->get();
+            $data = \App\DsiData::where('dsi_id',$request->id)->whereRaw('deleted_by IS NULL')->orderBy('id','asc')->get();
             if(count($data)== 0){
                 return redirect()->route('dsi.index')->with('alerta', 'No se encontraron registros!');
             }

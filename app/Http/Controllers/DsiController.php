@@ -26,9 +26,24 @@ class DsiController extends Controller
     {
         $this->middleware('auth');
     }
+    public function config()
+    {
+        $title = '<i class="icon fa fa-shopping-bag"></i> Días sin IVA';
+        $controlador = "dsi";
+        $subcon = 'dsi';
+        return view('dsi.config.index',compact('title', 'controlador', 'subcon'));
+    }
     public function index()
     {
         $permiso = DsiPermission::dsi_permiso(0,'dsi.data');
+        //if(Auth::user()->validar_permiso('dsi_developer')){
+            /*
+            if(Auth::user()->nivel_control == 1 || Auth::user()->nivel_control == 16){
+            }else{
+                return redirect()->route('dsi.data.index',['id' => 1]);
+            }
+            */
+        //}
         //dd($permiso);
         if(Auth::user()->validar_permiso($permiso) || $this->dev){
             //$dsi = new Dsi();
@@ -122,7 +137,7 @@ class DsiController extends Controller
     {
         $permiso = DsiPermission::dsi_permiso(0,'dsi.create');
         //dd($permiso);
-        if(Auth::user()->validar_permiso($permiso) || $this->dev){
+        if(Auth::user()->validar_permiso($permiso)){
             $dsi = new Dsi();
             $dsi->last_id = 0;
             $dsi->name = $request->name;

@@ -18,7 +18,7 @@
     <div class="col-md-12">
       <h3 class="h5-dark">Anticipos</h3>
         <div class="form-group" id="divanticipo">       
-            <div class="row justify-content-center">
+            <div class="row">
                 <fieldset class="col-12 col-md-12 px-3">
                     <div id="advances"><?php 
                     if(isset($dia_iva)){

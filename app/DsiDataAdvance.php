@@ -24,6 +24,9 @@ class DsiDataAdvance extends Model
     }
     public function dsi_data_all_products()
     {
-        return $this->belongsToMany('App\DsiDataProduct')->withPivot('value','state')->withTimestamps();
+        return $this->belongsToMany('App\DsiDataProduct')
+                ->withPivot('id','value','state')
+                ->withTimestamps()
+                ->where('dsi_data_advance_dsi_data_product.state',1);
     }
 }

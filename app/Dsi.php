@@ -12,9 +12,10 @@ class Dsi extends Model
     public static $depurar = false;
     public static $fields_data = [
         "id" => "ID",//'id'
-        "type" => "Tipo de Venta",//'tipoid'
+        "tipoventa" => "Tipo de Venta",//'tipoid'
+        "cedula_anticipo" => "Identificación Anticipo",//'tipoid'
         "tipoid" => "Tipo de identificación",//'tipoid'
-        "identificacion" => "Identificación",//'identificacion'
+        "identificacion" => "Identificación Cliente",//'identificacion'
         "nombre" => "Nombre",//'nombre'
         "tipofac" => "Tipo de factura",//'tipofac'
         "tipodoc" => "Tipo de documento",//'tipodoc'

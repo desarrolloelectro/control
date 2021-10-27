@@ -43,7 +43,13 @@
         </div>
         </div>
         <div class="col-md-2">
+            @php
+            /** OJO Editar en controlador */
+            $permiso_create = \App\DsiPermission::dsi_permiso(0,'dsi.create');
+            @endphp
+            @if(Auth::user()->validar_permiso($permiso_create))
             <a href="{{ route('dsi.create') }}" class="btn btn-primary"><i class="fa fa-plus-circle" aria-hidden="true"></i>Nuevo</a>
+            @endif
         </div>
     </div>
     <br>

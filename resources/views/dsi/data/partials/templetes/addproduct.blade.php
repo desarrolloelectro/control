@@ -1,9 +1,13 @@
     <div class="col-md-12" style="display: block; text-align: right;">
     @if($ayuda) <button data-toggle="modal" data-target="#helpProduct" class="close" style="float:left" type="button" title="Ayuda">?</button>@endif
     @if(!isset($dia_iva))
-    <button title="Quitar este producto de la lista" class="close" type="button" onclick="removeItemPanel(this.parentNode)">x</button>
+        <button title="Quitar este producto de la lista" class="close" type="button" onclick="removeItemPanel(this.parentNode)">x</button>
     @else
-        <button title="No se puede quitar este producto de la lista" class="close" type="button" disabled>x</button>
+        @if(isset($dia_iva) && isset($dsi_data_products))
+            <button title="No se puede quitar este producto de la lista {{ $dsi_data_products->id }}" class="close" type="button" disabled>x</button>
+        @else
+            <button title="No se puede quitar este producto de la lista" class="close" type="button" disabled>x</button>
+        @endif 
     @endif 
     </div>
     <input hidden {{ isset($dia_iva) ? ' disabled ' : '' }} type="number" class="productItemid" name="productItemid[{{ isset($num_dsm) ? $num_dsm : '${dsi_ant_num_dsm_value}' }}][]"  value="{{ isset($dia_iva) && isset($dsi_data_products) ? $dsi_data_products->id : '' }}">
@@ -53,7 +57,7 @@
     <div class="col-md-12" style="display: block;">
     @if(isset($dsi_data_products) && $dsi_data_products->id)
     <h3>Anticipos relacionados a este producto  @if($editar_datos)
-    <button type="button" class="btn btn-warning" onclick="document.getElementById('id_producto_para_anticipo').value='{{ $dsi_data_products->id }}';document.getElementById('ref_producto_para_anticipo').value='{{ $dsi_data_products->referencia }}'; " data-toggle="modal" data-target="#searchAdvancesProduct">Agregar</button>
+    <button type="button" class="btn btn-warning" onclick="document.getElementById('id_producto_para_anticipo').value='{{ $dsi_data_products->id }}';document.getElementById('ref_producto_para_anticipo').value='{{ $dsi_data_products->referencia }}'; document.getElementById('ref_producto_para_anticipo_html').innerHTML='Referencia del producto: {{ $dsi_data_products->referencia }}';document.getElementById('valor_producto_para_anticipo').value='{{ $dsi_data_products->valor }}';document.getElementById('valor_producto_para_anticipo_html').innerHTML=' Valor: {{ custom_currency_format($dsi_data_products->valor) }}';" data-toggle="modal" data-target="#searchAdvancesProduct">Agregar</button>
     @endif
     </h3>
     @if (!empty($dsi_data_products->dsi_data_all_advances) && count($dsi_data_products->dsi_data_all_advances)>0)
@@ -63,6 +67,7 @@
                 <th>Ref</th>
                 <th>Fecha</th>
                 <th>Valor</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody id="products_with_advances">
@@ -77,6 +82,24 @@
                             <td>{{ $prod_advances->num_recibo }}</td>
                             <td>{{ custom_date_format($prod_advances->fecha_recibo, "d/m/Y") }}</td>
                             <td>{{ custom_currency_format($prod_advances->pivot->value) }}</td>
+                            <td>
+                                <?php
+                                /*
+                                @if(Auth::user()->validar_permiso('dsi_developer'))
+                                var_dump($permiso_archive);
+                                */
+                                ?>
+                                @php
+                                    $permiso_archive = \App\DsiPermission::dsi_permiso($dia_iva->dsi_id,'dsi.data.archive');
+                                @endphp
+                                @if(Auth::user()->validar_permiso($permiso_archive))
+                                    <button title="Dejar de utilizar el anticipo" type="button" 
+                                    onclick="desasociarProductoAnticipo({{$prod_advances->pivot->id}},{{ $dsi_data_products->id }},'Confirma que desea dejar de utilizar el anticipo de '+ '{{ custom_currency_format($prod_advances->pivot->value) }}' +' en el producto con referencia '+ '{{ $dsi_data_products->referencia }}' +'?')" 
+                                    class="btn btn-success">Retirar anticipo de producto</button>
+                                @else
+                                    <button type="button" disabled class="btn btn-success">Retirar anticipo de producto</button>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
         </tbody>

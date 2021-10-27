@@ -67,7 +67,7 @@ $permiso_report = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.report');
         <table class="table table-hover table-bordered table-striped" id="sampleTable">
             <!--    COMIENZA CONTENIDO TABLA   -->
             <thead>
-                <tr >
+                <tr>
                     @foreach($fields_view as $field_view)
                     <th>{!! $fields[$field_view] !!}</th>
                     @endforeach
@@ -87,7 +87,14 @@ $permiso_report = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.report');
                 </thead> 
                 <tbody>
                 @foreach($dsi_data as $dia_iva)
-                <tr dsi="{{$dia_iva->dsi_id}}" dsi_data_id="{{$dia_iva->id}}">
+                @if($dia_iva->deleted_by=="" || Auth::user()->validar_permiso('dsi_developer'))
+                <tr 
+                @if($dia_iva->deleted_by!="")
+                style="text-decoration: line-through;" 
+                title="Eliminado por {{ $dia_iva->deleted_by }} en la fecha: {{ custom_date_format($dia_iva->deleted_at) }}"
+                @endif
+
+                dsi="{{$dia_iva->dsi_id}}" dsi_data_id="{{$dia_iva->id}}">
                     @foreach($fields_view as $field_view) @php $field_view_ft = $field_view."_ft"; $field_view_fst = $field_view."_fst"; @endphp 
                         @if(isset($dia_iva->$field_view_fst)) <?php /** Campo con Formato y Estilos */?>
                             <td>{!! $dia_iva->$field_view_fst !!}</td>
@@ -115,7 +122,7 @@ $permiso_report = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.report');
                         @endif
                     @endforeach
                     <td>
-                        <form id = "form{{$dia_iva->id}}" class = "form-table" action="{{ route('dsi.data.destroy', $dia_iva->id) }}" method="POST">
+                        <form id = "form{{$dia_iva->id}}" class = "form-table" action="{{ route('dsi.data.destroy', ['dsi' => $dia_iva->dsi_id, 'id' => $dia_iva->id]) }}" method="POST">
                             {{ csrf_field() }}
                             {{ method_field('DELETE') }}
                             
@@ -137,6 +144,7 @@ $permiso_report = \App\DsiPermission::dsi_permiso($dsi->id,'dsi.data.report');
                         </form>
                     </td>
                 </tr>
+                @endif
                 @endforeach
             </tbody>
             <!--    FIN CONTENIDO TABLA   -->

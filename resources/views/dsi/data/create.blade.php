@@ -100,6 +100,16 @@ if(isset($dia_iva)){
                     </ul>
                 </div>
             @endif
+            @if(session()->has('mensaje'))
+                <div class="alert alert-success">
+                    {{ session()->get('mensaje') }}
+                </div>
+            @endif
+            @if(session()->has('danger'))
+                <div class="alert alert-danger">
+                    {{ session()->get('danger') }}
+                </div>
+            @endif
             @if(Auth::user()->validar_permiso($permiso_history) && false)
             @isset($historicos)
             <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalHistorico">
@@ -122,12 +132,12 @@ if(isset($dia_iva)){
                             <table class="table table-hover table-bordered" id="tablaHistoricos">
                                 <thead>
                                     <tr>
-                                        <th >ID</th>
-                                        <th >Tipo Estado</th>
-                                        <th >Estado Antes</th>
-                                        <th >Estado Despues</th>
-                                        <th >Usuario</th>
-                                        <th >Fecha</th>
+                                        <th>ID</th>
+                                        <th>Tipo Estado</th>
+                                        <th>Estado Antes</th>
+                                        <th>Estado Despues</th>
+                                        <th>Usuario</th>
+                                        <th>Fecha</th>
                                     </tr>
                                     </thead> 
                                     <tbody>
@@ -165,6 +175,9 @@ if(isset($dia_iva)){
                 <input type="hidden" id = "opcion" name = "opcion" value = "{{$opcion}}">
                 @endisset
                 @if(isset($dia_iva))
+                    @if ($dia_iva->deleted_at != "")
+                        <div class="alert alert-danger">Registro Eliminado por {{ $dia_iva->deleted_by }}</div>
+                    @endif
                     @include('dsi.data.partials.anticipo',['editar_datos' => $editar_datos, 'documentsm' => $documentsm, 'documentdsm' => $documentdsm, 'ayuda' => $ayuda, 'tiposventa' => $tiposventa, 'dia_iva' => $dia_iva])
                 @else
                     @include('dsi.data.partials.anticipo',['editar_datos' => $editar_datos, 'documentsm' => $documentsm, 'documentdsm' => $documentdsm, 'ayuda' => $ayuda, 'tiposventa' => $tiposventa, 'dia_iva' => null])
@@ -532,11 +545,7 @@ if(isset($dia_iva)){
                     @endif
                     @endisset
                 </div>
-                @if(session()->has('mensaje'))
-                    <div class="alert alert-success">
-                        {{ session()->get('mensaje') }}
-                    </div>
-                @endif
+                
                 <input type="submit" id="btn-enviar"  name="submit" value="{{ $boton }}" class="btn btn-primary">
                 <input type="submit" id="btn-enviar2" name="submit" value="{{ $boton2 }}"  class="btn btn-success">
                 <a href="{{ route('dsi.data.index',['id' => $dsi->id]) }}"><button class="btn btn-info" type = "button">Regresar</button></a>

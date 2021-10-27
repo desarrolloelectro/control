@@ -61,9 +61,7 @@
         <!-- User Menu-->
 
         <li class="app-search color-blanco">
-
         
-
         </li>
 
 
@@ -97,7 +95,9 @@
 			{{ csrf_field() }}
 
 		</form>
-
+    
+    {!! banda_mantenimiento() !!}
+    
     </header>
 
     <!-- Sidebar menu-->

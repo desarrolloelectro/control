@@ -4,6 +4,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exampleModalLongTitle">Anticipos</h5>
+        <p><span id="ref_producto_para_anticipo_html"></span><span id="valor_producto_para_anticipo_html"></span><p>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -11,6 +12,7 @@
       <div class="modal-body">
       <input type="hidden" name="dsi_data_product_id" value="" id="id_producto_para_anticipo">
       <input type="hidden" name="ref_producto_para_anticipo" value="" id="ref_producto_para_anticipo">
+      <input type="hidden" name="valor_producto_para_anticipo" value="" id="valor_producto_para_anticipo">
         <table class="table table-hover">
             <thead>
                 <tr>
@@ -37,7 +39,7 @@
                         <td>{{ custom_date_format($dsi_data_advances->fecha_recibo, "d/m/Y") }}</td>
                         <td>{{ custom_currency_format($dsi_data_advances->valor_recibo) }}</td>
                         <td>{{ custom_currency_format($dsi_data_advances->saldo) }}</td>
-                        <td><input type="number" min="0" max="{{ $dsi_data_advances->saldo }}" class="valor_anticipo_usar_en_producto"></td>
+                        <td><input type="number" min="0" max="{{ $dsi_data_advances->saldo }}" class="form-control valor_anticipo_usar_en_producto"></td>
                         <td><span class="saldo_anticipo_usar_en_producto">{{ custom_currency_format($dsi_data_advances->saldo) }}</span></td>
                         <td>
                           <button type="button" 

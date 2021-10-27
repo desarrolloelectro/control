@@ -8,7 +8,9 @@ use App\DsiData;
 use App\DsiDataAdvance;
 use App\DsiDataDsm;
 use App\DsiDataProduct;
+use App\DsiDataAdvanceDsiDataProduct;
 use App\DsiPermission;
+use App\DsiTipoRecibo;
 use App\Historial;
 use App\Medio_pago;
 use App\Tipo_identificacion;
@@ -20,6 +22,7 @@ use App\Unidad;
 use App\Iva_estado;
 use App\DsiAudit;
 use App\DsiProduct;
+
 use DB;
 use Auth;
 
@@ -127,7 +130,7 @@ class DsiDataController extends Controller
             }else{
                 return response()->json([
                     'ok' => false,
-                    'message' => "error1"
+                    'message' => "error"
                 ]);
             }
            
@@ -135,20 +138,91 @@ class DsiDataController extends Controller
         }else{
             return response()->json([
                 'ok' => false,
-                'message' => "error2"
+                'message' => "Usuario no autorizado"
             ]);
+        }
+    }
+    public function archiveAdvance(Request $request)
+    {
+        $permiso_delete = \App\DsiPermission::dsi_permiso($request->dsi_id,'dsi.data.delete');
+        if(Auth::user()->validar_permiso($permiso_delete)){
+            $dsas = DsiDataAdvance::find($request->dsi_advance_id);
+            //dd($dsas);
+            $dsas->num_recibo = $dsas->num_recibo."::ELIMINADO::".date("YmdHis");
+            $dsas->state = 0;
+            $dsas->deleted_at = date("Y-m-d H:i:s");
+            $dsas->deleted_by = Auth::user()->coduser;
+            $result = $dsas->save();
+            if ($result){
+                return response()->json([
+                    'success' => true,
+                    'message' => "Avance archivado exitosamente"
+                ]);
+            }else{
+                return response()->json([
+                    'success' => false,
+                    'ok' => false,
+                    'message' => "Error al archivar el avance"
+                ]);
+            }
+        }else{
+            return response()->json([
+                'success' => false,
+                'ok' => false,
+                'message' => "Acceso denegado"
+            ]);
+            //return view('errors.access_denied');
+        }
+    }
+    public function archiveProduct(Request $request)
+    {
+        $token1 = $request->_token;
+        $token2 = csrf_token();
+        if ($token1 == $token2){
+            $dspr = DsiDataProduct::find($request->dsi_advance_id);
+            $dspr->state = 0;
+            $dspr->updated_at = date("Y-m-d H:i:s");
+            $dspr->updated_by = Auth::id();
+            $result = $dspr->save();
+            if ($result){
+                return response()->json([
+                    'success' => true,
+                    'message' => "Avance archivado exitosamente"
+                ]);
+            }else{
+                return response()->json([
+                    'success' => false,
+                    'ok' => false,
+                    'message' => "Error al archivar el avance"
+                ]);
+            }
         }
     }
     public function desaociateProductAdvance(Request $request)
     {
-        //pendiente permiso
-        $dsi_data_advance = DsiDataAdvance::findOrFail($request->dsi_advance_id);
-        $dsi_data_advance->dsi_data_product_id = NULL;
-        $result = $dsi_data_advance->save();
-        return response()->json([
-            'success' => $result,
-            'message' => $result ? "ok" : "error"
-        ]);
+        $token1 = $request->_token;
+        $token2 = csrf_token();
+        if ($token1 == $token2){
+            $dsap = DsiDataAdvanceDsiDataProduct::find($request->value);
+            $dsap->state = 0;
+            $dsap->updated_at = date("Y-m-d H:i:s");
+            $dsap->updated_by = Auth::id();
+
+            $result = $dsap->save();
+            if ($result){
+                return response()->json([
+                    'success' => true,
+                    'message' => "Avance retirado exitosamente"
+                ]);
+            }else{
+                return response()->json([
+                    'success' => false,
+                    'ok' => false,
+                    'message' => "Error al desacociar el avance"
+                ]);
+            }
+        }
+        
     }
     public function index(Request $request, $id)
     {
@@ -223,7 +297,7 @@ class DsiDataController extends Controller
             }
                        
 
-            $title = $dsi->name;
+            $title = "Día sin IVA";//$dsi->name;
             $medio_pagos = Medio_pago::orderBy('id','asc')->get();
 
             if($valor != '' && $valor != null){
@@ -353,7 +427,9 @@ class DsiDataController extends Controller
             */
             $enable_meta = DSI::$meta;
             $ayuda = false;
-            $documentsm = ['RJS8'=>'RJS8 :: Recibo Sistema', 'REC8'=>'REC8 :: Recibo Manual'];
+            //$documentsm = ['RJS8'=>'RJS8 :: Recibo Sistema', 'REC8'=>'REC8 :: Recibo Manual', 'PEXX'=>'PEXX :: Satelite'];
+            $documentsm = DsiTipoRecibo::selectRaw('codigo, CONCAT(codigo," :: ",nombre) AS nombre')->get();
+            $documentsm = $documentsm->pluck('nombre','codigo');
             $documentdsm = 'PFDI';
             $tiposventa = [];
             $date = date("Y-m-d");
@@ -423,6 +499,17 @@ class DsiDataController extends Controller
                             ->firstorFail();
                 if(isset($request->ant_tipo_recibo)){
                     foreach($request->ant_tipo_recibo as $id => $anticipo){
+                        //inicio validar recibo repetido
+                        $ds = DsiDataAdvance::where('num_recibo',$request->ant_num_recibo[$id])->get();
+                        if(count($ds)!=0){
+                            if(isset($ds->id)){
+                                $mensaje = ", Se está utilizando en el ID <a href='https://control.mitoolset.com/dsi/data/1/edit/".$ds->id."'>".$ds->id."</a>";
+                            }else{
+                                $mensaje = "";
+                            }
+                            return redirect()->back()->with('danger', "No es posible registrar dos veces el mismo recibo!".$mensaje);
+                        }
+                        //fin validar recibo repetido
                         $dsi_data_advance = new DsiDataAdvance;
                         $dsi_data_advance->dsi_data_id = $dsi_data->id;
                         $dsi_data_advance->tipo_recibo = $request->ant_tipo_recibo[$id];
@@ -444,6 +531,7 @@ class DsiDataController extends Controller
                         $dsi_data_dsm->save();
                         if(isset($request->productItemnombre[$num_dsm])){
                             foreach($request->productItemnombre[$num_dsm] as $id2 => $anticipo){
+                                
                                 $dsi_data_product = new DsiDataProduct;
                                 $dsi_data_product->dsi_data_dsm_id = $dsi_data_dsm->id;
                                 $dsi_data_product->nombre = $request->productItemnombre[$num_dsm][$id2];
@@ -579,6 +667,7 @@ class DsiDataController extends Controller
         $permiso_authorize = DsiPermission::dsi_permiso($dsi_id,'dsi.data.authorize');
         $permiso_reverse = DsiPermission::dsi_permiso($dsi_id,'dsi.data.reverse');
         
+        
         if(Auth::user()->validar_permiso($permiso_dsi_view) && Auth::user()->validar_permiso($permiso_edit) || Auth::user()->validar_permiso( $permiso_authorize) || Auth::user()->validar_permiso($permiso_reverse)) {
             $dsi = Dsi::find($dsi_id);
             $meta_fields = json_decode($dsi->meta_fields,true);
@@ -604,13 +693,15 @@ class DsiDataController extends Controller
             $accion = route('dsi.data.update',['dsi_id'=> $dia_iva->dsi_id, 'id'=> $dia_iva->id]);
             //dsi/data/{dsi_id}/update/{id}
             $metodo = method_field('POST');
-            $titulo = "Actualizar Día sin IVA Noviembre";
+            $titulo = "Actualizar Día sin IVA";
             $titulo2 = "Editar";
             $boton = "Actualizar";
             $boton2 = "Actualizar y continuar editando";
             $enable_meta = DSI::$meta;
             $ayuda = false;
-            $documentsm = ['RJS8'=>'RJS8 :: Recibo Sistema', 'REC8'=>'REC8 :: Recibo Manual'];
+            //$documentsm = ['RJS8'=>'RJS8 :: Recibo Sistema', 'REC8'=>'REC8 :: Recibo Manual', 'PEXX'=>'PEXX :: Satelite'];
+            $documentsm = DsiTipoRecibo::selectRaw('codigo, CONCAT(codigo," :: ",nombre) AS nombre')->get();
+            $documentsm = $documentsm->pluck('nombre','codigo');
             $documentdsm = 'PFDI';
             $tiposventa = [];
             $date = date("Y-m-d");
@@ -658,25 +749,98 @@ class DsiDataController extends Controller
      */
     public function update(Request $request, $dsi_id, $id)
     {
+        $permiso_revisoria = DsiPermission::dsi_permiso($dsi_id,'dsi.data.revisoria');
+
         //dd([$request->all(), $dsi_id, $id]);
         $dsi_data = DsiData::where('dsi_id',$dsi_id)->where('id',$id)->firstOrFail();
         //Inicio Anticipo
         //if(isset($request->tipoventa))
         if($request->tipoventa == "Anticipo" || $dsi_data->tipoventa == "Anticipo"){
-            //dd([$request->all(), $dsi_id, $id]);
+            if(Auth::user()->validar_permiso($permiso_revisoria)){//permiso revisoria //'dsi_developer'
+                if(isset($request->ant_revisoria_manager)){
+                    foreach ($request->ant_revisoria_manager as $idda => $rev){
+                        $dsi_data_advance = DsiDataAdvance::find($idda);
+                        $dsi_data_advance->revisoria_manager = $rev;
+                        $dsi_data_advance->updated_by = Auth::user()->coduser;
+                        $dsi_data_advance->save();
+                    }
+                }
+                //dd($request->all());
+                if(isset($request->dsm_revisoria_manager)){
+                    foreach ($request->dsm_revisoria_manager as $iddsm => $revdsm){
+                        $dsi_data_dsm = DsiDataDsm::find($iddsm);
+                        $dsi_data_dsm->revisoria_manager = $revdsm;
+                        $dsi_data_dsm->save();
+                        //dd($dsi_data_dsm);
+                    }
+                }
+            }
                 if(isset($request->ant_tipo_recibo)){
                     foreach($request->ant_tipo_recibo as $id => $anticipo){
-                        if($request->ant_id[$id]==""){
-                            $dsi_data_advance = new DsiDataAdvance;
-                            $dsi_data_advance->dsi_data_id = $dsi_data->id;
-                            $dsi_data_advance->tipo_recibo = $request->ant_tipo_recibo[$id];
-                            $dsi_data_advance->num_recibo = $request->ant_num_recibo[$id];
-                            $dsi_data_advance->valor_recibo = $request->ant_vr_recibo[$id];
-                            $dsi_data_advance->fecha_recibo = $request->ant_fecha_recibo[$id];
-                            $dsi_data_advance->cliente_id = $request->ant_cliente_id[$id];
-                            $dsi_data_advance->cliente_nombre = $request->ant_cliente_nombre[$id];
-                            $dsi_data_advance->created_by = Auth::user()->coduser;
-                            $dsi_data_advance->save();
+                        //inicio validar recibo repetido
+                        $ds = DsiDataAdvance::where('num_recibo',$request->ant_num_recibo[$id])->where('tipo_recibo',$request->ant_tipo_recibo[$id])->get();
+                        if($request->ant_id[$id]=="" && count($ds)==0){
+                            
+                            //fin validar recibo repetido
+                            
+                                $dsi_data_advance = new DsiDataAdvance;
+                                $dsi_data_advance->dsi_data_id = $dsi_data->id;
+                                $dsi_data_advance->tipo_recibo = $request->ant_tipo_recibo[$id];
+                                $dsi_data_advance->num_recibo = $request->ant_num_recibo[$id];
+                                $dsi_data_advance->valor_recibo = $request->ant_vr_recibo[$id];
+                                $dsi_data_advance->fecha_recibo = $request->ant_fecha_recibo[$id];
+                                $dsi_data_advance->cliente_id = $request->ant_cliente_id[$id];
+                                $dsi_data_advance->cliente_nombre = $request->ant_cliente_nombre[$id];
+                                $dsi_data_advance->created_by = Auth::user()->coduser;
+                                $dsi_data_advance->save();
+                        }else{
+                            $permiso_editar = \App\DsiPermission::dsi_permiso($dsi_id,'dsi.data.edit');
+                            if(Auth::user()->validar_permiso($permiso_editar)){//permiso editar
+                                //dd($request->all());
+                                
+                                $iddup = $request->ant_id[$id];
+                                $dsi_data_advance = DsiDataAdvance::find($iddup);
+                                $dsi_data_advance_r = DsiDataAdvance::where('num_recibo',$request->ant_num_recibo[$id])
+                                ->where('tipo_recibo',$request->ant_tipo_recibo[$id])->first();
+                                if(isset($dsi_data_advance_r->id) && $dsi_data_advance_r->id==$iddup){
+                                    $dsi_data_advance->tipo_recibo = $request->ant_tipo_recibo[$id];
+                                    $dsi_data_advance->num_recibo = $request->ant_num_recibo[$id];
+                                    $dsi_data_advance->valor_recibo = $request->ant_vr_recibo[$id];
+                                    $dsi_data_advance->fecha_recibo = $request->ant_fecha_recibo[$id];
+                                    $dsi_data_advance->cliente_id = $request->ant_cliente_id[$id];
+                                    $dsi_data_advance->cliente_nombre = $request->ant_cliente_nombre[$id];
+                                    $dsi_data_advance->updated_by = Auth::user()->coduser;
+                                    $dsi_data_advance->save();
+                                }else{
+                                    $ds = DsiDataAdvance::where('num_recibo',$request->ant_num_recibo[$id])->where('tipo_recibo',$request->ant_tipo_recibo[$id])->get();
+                                    if(count($ds)==0){
+                                    $dsi_data_advance->tipo_recibo = $request->ant_tipo_recibo[$id];
+                                    $dsi_data_advance->num_recibo = $request->ant_num_recibo[$id];
+                                    $dsi_data_advance->valor_recibo = $request->ant_vr_recibo[$id];
+                                    $dsi_data_advance->fecha_recibo = $request->ant_fecha_recibo[$id];
+                                    $dsi_data_advance->cliente_id = $request->ant_cliente_id[$id];
+                                    $dsi_data_advance->cliente_nombre = $request->ant_cliente_nombre[$id];
+                                    $dsi_data_advance->updated_by = Auth::user()->coduser;
+                                    $dsi_data_advance->save();
+                                    }else{
+                                        if(Auth::user()->validar_permiso('dsi_developer')){
+                                            dd($ds);
+                                        }
+                                        if(isset($ds->id)){
+                                            $mensaje = ", Se está utilizando en el ID <a href='https://control.mitoolset.com/dsi/data/1/edit/".$ds->id."'>".$ds->id."</a>";
+                                        }else{
+                                            $mensaje = "";
+                                        }
+                                        return redirect()->back()->with('danger', "No es posible registrar dos veces el mismo recibo!".$mensaje);
+                                    }
+                                    //var_dump($dsi_data_advance_r);
+                                    //dd($dsi_data_advance_r->id!=$iddup);
+                                }
+                            
+                                
+                                    
+                               
+                            }
                         }
                     }
                 }
@@ -793,7 +957,20 @@ class DsiDataController extends Controller
      */
     public function destroy($dsi_id, $id)
     {
-        $dsi_data = DsiData::where('dsi_id',$dsi_id)->where('id',$id)->firstOrFail();
+        $permiso_delete = \App\DsiPermission::dsi_permiso($dsi_id,'dsi.data.delete');
+        if(Auth::user()->validar_permiso($permiso_delete)){
+            $dsi_data = DsiData::where('dsi_id',$dsi_id)->where('id',$id)->firstOrFail();
+            $dsi_data->deleted_at = date("Y-m-d H:i:s");
+            $dsi_data->deleted_by = Auth::user()->coduser;
+            $result = $dsi_data->save();
+            if($result){
+                return redirect()->route('dsi.data.index',['id'=>$dsi_id])->with('mensaje', "El Registro fué archivado con éxito!");
+            }else{
+                return redirect()->route('dsi.data.index',['id'=>$dsi_id])->with('mensaje', "Hubo un error al eliminar!");
+            }
+        }else{
+            return view('errors.access_denied');
+        }
     }
     public function restore($dsi_id, $id)
     {

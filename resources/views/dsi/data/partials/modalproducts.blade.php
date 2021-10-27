@@ -113,7 +113,7 @@
               <td>${obj.nombre}</td>
               <td>${obj.marca}</td>
               <td>${obj.linea}</td>
-            <tr>`;//<td style="text-align:right;">$ ${ new Intl.NumberFormat("de-DE").format(obj.valor) }</td>
+            <tr>`;//<td style="text-align:right;">$ ${ custom_currency_format(obj.valor) }</td>
           });
           //console.log(json);
           contenidoTablaProductos.innerHTML += `<tr><td colspan="6">${json.pagination}<td><tr>`;

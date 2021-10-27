@@ -14,4 +14,7 @@
     .separateItem{
         border:solid 1px #cccccc;border-radius:10px;padding:5px;margin: 5px 0px;width: 100%;display:block;
     }
+    .advanceItem.deleted * {
+        text-decoration: line-through;
+    }
 </style>

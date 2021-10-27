@@ -8,22 +8,11 @@
     </div>
 </div>
 
-
-
-
 <div class = "row">
     <div class="col-md-12">
           <div class="tile">
                 <div class="tile-body">
-                
-
-
-
-
-
-
-                    <div class = 'row'>
-
+                    <div class="row">
                         <div class="col-md-3 col-lg-3 col-configuracion">
                             <a href="{{ route('agencias.index') }}" >
                                 <div class="widget-small primary  coloured-icon"><i class="icon fa fa-cog fa-3x"></i>
@@ -223,6 +212,15 @@
                                 <div class="widget-small primary  coloured-icon"><i class="icon fa fa-cog fa-3x"></i>
                                     <div class="info">
                                     <h4>Usuario Agencias</h4>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-lg-3 col-configuracion">
+                            <a href="{{ route('dsi.config') }}" >
+                                <div class="widget-small primary  coloured-icon"><i class="icon fa fa-cog fa-3x"></i>
+                                    <div class="info">
+                                    <h4>Dias sin IVA</h4>
                                     </div>
                                 </div>
                             </a>

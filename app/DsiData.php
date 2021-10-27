@@ -3,7 +3,7 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Auth;
 class DsiData extends Model
 {
     public $timestamps = false;
@@ -114,7 +114,7 @@ class DsiData extends Model
     }                      
     public function getCaja2EstadoIdFtAttribute()
     {
-        $estado = $this->caja2_estado_id != null ? $this->banco_estado->nombre : '';
+        $estado = $this->caja2_estado_id != null ? $this->caja2_estado->nombre : '';
         return $estado;
     }
     public function getCaja2EstadoIdFstAttribute()
@@ -136,31 +136,42 @@ class DsiData extends Model
     {
         return '["'.$this->id.'","'.$this->dsi_id.'"]';
     }
-    public function dsi(){
+    public function dsi()
+    {
         return $this->belongsTo(Dsi::class,'dsi_id','id');
     }
 
-    public function dsi_data_advances(){
-        return $this->hasMany(DsiDataAdvance::class);
+    public function dsi_data_advances()
+    {
+        if(Auth::user()->validar_permiso('dsi_developer')){
+            return $this->hasMany(DsiDataAdvance::class);
+        }else{
+            return $this->hasMany(DsiDataAdvance::class)->where('dsi_data_advances.state',1);
+        }
     }
-    public function dsi_data_dsms(){
-        return $this->hasMany(DsiDataDsm::class);
+    public function dsi_data_dsms()
+    {
+        return $this->hasMany(DsiDataDsm::class)->where('state',1);
     }
 
-    public function dsi_metas(){
+    public function dsi_metas()
+    {
         return $this->hasMany(DsiMeta::class,'dsi_id','dsi_id');
     }
-    public function dsi_meta_values(){
+    public function dsi_meta_values()
+    {
         return $this->hasMany(DsiMetaValues::class,'dsi_data_id','id')->where('dsi_id', $this->dsi_id);
     }
-    public function dsi_meta_value($dsi_meta_id){
+    public function dsi_meta_value($dsi_meta_id)
+    {
         $data = DsiMetaValues::where('dsi_data_id',$this->id)
                 ->where('dsi_meta_id','=', $dsi_meta_id)
                 ->firstOrNew();
         $this->dsi_meta_value = $data;
     }
 
-    public function medio_pago(){
+    public function medio_pago()
+    {
         return $this->belongsTo(Medio_pago::class,'mediopago','id');
     }
 
